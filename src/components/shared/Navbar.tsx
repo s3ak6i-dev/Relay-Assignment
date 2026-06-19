@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { IconSettings } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
 import { SettingsModal } from './SettingsModal';
+import { NotificationBell } from './NotificationBell';
 import type { Role } from '../../types';
 
 const roles: { value: Role; label: string }[] = [
@@ -58,6 +59,9 @@ export function Navbar() {
         </div>
 
         <div style={{ flex: 1 }} />
+
+        {/* Notifications — employee only */}
+        {currentRole === 'employee' && <NotificationBell />}
 
         {/* Settings */}
         <button

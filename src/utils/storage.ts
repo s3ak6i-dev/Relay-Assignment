@@ -36,3 +36,13 @@ export function saveGroqKey(key: string): void {
 export function removeGroqKey(): void {
   localStorage.removeItem(GROQ_KEY);
 }
+
+const NOTIF_READ_KEY = 'relay_notif_read';
+
+export function loadNotifRead(): string {
+  return localStorage.getItem(NOTIF_READ_KEY) ?? new Date(0).toISOString();
+}
+
+export function saveNotifRead(ts: string): void {
+  localStorage.setItem(NOTIF_READ_KEY, ts);
+}
