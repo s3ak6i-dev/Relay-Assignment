@@ -8,6 +8,7 @@ import { MyTickets } from './components/employee/MyTickets';
 import { DepartmentQueue } from './components/agent/DepartmentQueue';
 import { TicketDetailPage } from './components/agent/TicketDetailPage';
 import { AnalyticsDashboard } from './components/admin/AnalyticsDashboard';
+import { AllTickets } from './components/admin/AllTickets';
 import type { Role, Ticket } from './types';
 
 const DEFAULT_PAGE: Record<Role, Page> = {
@@ -48,6 +49,7 @@ function AppShell() {
       }
       return <DepartmentQueue onSelectTicket={t => setSelectedTicket(t)} />;
     }
+    if (page === 'all-tickets') return <AllTickets />;
     return <AnalyticsDashboard />;
   }
 

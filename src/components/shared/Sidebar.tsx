@@ -6,7 +6,7 @@ import type { Department } from '../../types';
 
 type EmployeePage = 'new-ticket' | 'my-tickets';
 type AgentPage = 'queue';
-type AdminPage = 'dashboard';
+type AdminPage = 'dashboard' | 'all-tickets';
 export type Page = EmployeePage | AgentPage | AdminPage;
 
 interface SidebarProps {
@@ -64,7 +64,7 @@ export function Sidebar({ page, onNavigate }: SidebarProps) {
         <section>
           <SectionLabel>Overview</SectionLabel>
           <NavItem icon={<IconChartBar size={15} />} label="Dashboard" active={page === 'dashboard'} onClick={() => onNavigate('dashboard')} />
-          <NavItem icon={<IconInbox size={15} />} label="All tickets" active={false} onClick={() => {}} />
+          <NavItem icon={<IconInbox size={15} />} label="All tickets" active={page === 'all-tickets'} onClick={() => onNavigate('all-tickets')} count={tickets.length} />
         </section>
       )}
     </aside>
