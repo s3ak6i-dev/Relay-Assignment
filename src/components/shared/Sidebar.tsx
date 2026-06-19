@@ -17,13 +17,15 @@ interface SidebarProps {
 const deptLabels: Department[] = ['IT', 'HR', 'Finance', 'Admin'];
 
 export function Sidebar({ page, onNavigate }: SidebarProps) {
-  const { currentRole, tickets, agentDepartment, setAgentDept } = useApp();
+  const { currentRole, tickets, agentDepartment, setAgentDept, currentUser } = useApp();
 
   const queueCount = tickets.filter(
     t => t.category === agentDepartment && (t.status === 'Open' || t.status === 'In Progress')
   ).length;
 
-  const myTicketCount = tickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length;
+  const myTicketCount = tickets.filter(
+    t => t.raisedBy === currentUser && (t.status === 'Open' || t.status === 'In Progress')
+  ).length;
 
   return (
     <aside style={{
