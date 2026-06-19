@@ -20,8 +20,9 @@ function mockCategorize(title: string, description: string): CategorizationResul
   return { department: 'Admin', confidence: 0.78, reason: 'Sounds like a general admin or facilities request.' };
 }
 
-function mockSimilar(resolvedTickets: Ticket[]): string[] {
-  return resolvedTickets.slice(0, 2).map(t => t.id);
+function mockSimilar(resolvedTickets: Ticket[], suggestedDept?: string): string[] {
+  const sameDept = resolvedTickets.filter(t => t.category === suggestedDept);
+  return sameDept.slice(0, 2).map(t => t.id);
 }
 
 function mockDraft(ticket: Ticket): string {
@@ -95,22 +96,27 @@ Return only valid JSON. No preamble.`;
     title: string,
     description: string,
     resolvedTickets: Ticket[],
+    suggestedDept?: string,
   ): Promise<string[]> => {
     if (!hasKey || resolvedTickets.length === 0) return [];
 
     try {
-      const system = `Given a new ticket and a list of existing resolved tickets (as JSON), return the IDs of up to 3 most semantically similar ones.
-Return only a JSON array of IDs. No preamble.`;
-      const ticketList = resolvedTickets.slice(0, 50).map(t => ({
-        id: t.id, title: t.title, description: t.description,
+      const system = `Given a new ticket and a list of existing resolved tickets, return the IDs of up to 3 most semantically similar ones.
+Return only a JSON array of IDs. If none are similar, return []. No preamble.`;
+      // Send only id + title to keep well under token limits
+      const ticketList = resolvedTickets.slice(0, 30).map(t => ({
+        id: t.id, title: t.title,
       }));
-      const user = `New ticket:\nTitle: ${title}\nDescription: ${description}\n\nExisting tickets:\n${JSON.stringify(ticketList)}`;
+      const user = `New ticket title: ${title}\nNew ticket description: ${description}\n\nExisting resolved tickets:\n${JSON.stringify(ticketList)}`;
       const raw = await groqChat(system, user, groqApiKey);
       const match = raw.match(/\[[\s\S]*\]/);
       if (!match) return [];
-      return JSON.parse(match[0]) as string[];
+      const ids = JSON.parse(match[0]) as string[];
+      // Validate returned IDs actually exist
+      const validIds = new Set(resolvedTickets.map(t => t.id));
+      return ids.filter(id => validIds.has(id));
     } catch {
-      return mockSimilar(resolvedTickets);
+      return mockSimilar(resolvedTickets, suggestedDept);
     }
   }, [hasKey, groqApiKey]);
 

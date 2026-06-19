@@ -44,7 +44,7 @@ export function NewTicketForm({ onNavigate }: Props) {
         setAiConf(result.confidence);
         setAiReason(result.reason);
         const resolved = tickets.filter(tk => tk.status === 'Resolved');
-        const ids = await findSimilar(t, d, resolved);
+        const ids = await findSimilar(t, d, resolved, result.department);
         setSimilarIds(ids);
         setSimilarOpen(ids.length > 0);
       }
