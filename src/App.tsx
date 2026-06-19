@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/shared/Navbar';
 import { Sidebar, type Page } from './components/shared/Sidebar';
@@ -8,19 +8,29 @@ import { MyTickets } from './components/employee/MyTickets';
 import { DepartmentQueue } from './components/agent/DepartmentQueue';
 import { TicketDetailPage } from './components/agent/TicketDetailPage';
 import { AnalyticsDashboard } from './components/admin/AnalyticsDashboard';
-import type { Ticket } from './types';
+import type { Role, Ticket } from './types';
+
+const DEFAULT_PAGE: Record<Role, Page> = {
+  employee: 'new-ticket',
+  agent: 'queue',
+  admin: 'dashboard',
+};
 
 function AppShell() {
   const { currentRole } = useApp();
+  const prevRole = useRef<Role>(currentRole);
 
-  const defaultPage = (): Page => {
-    if (currentRole === 'agent') return 'queue';
-    if (currentRole === 'admin') return 'dashboard';
-    return 'new-ticket';
-  };
-
-  const [page, setPage] = useState<Page>(defaultPage);
+  const [page, setPage] = useState<Page>(DEFAULT_PAGE[currentRole]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+  // When role changes, reset to that role's default page
+  useEffect(() => {
+    if (currentRole !== prevRole.current) {
+      prevRole.current = currentRole;
+      setPage(DEFAULT_PAGE[currentRole]);
+      setSelectedTicket(null);
+    }
+  }, [currentRole]);
 
   function handleNavigate(p: Page) {
     setPage(p);
@@ -41,22 +51,12 @@ function AppShell() {
     return <AnalyticsDashboard />;
   }
 
-  // Reset page when role changes
-  const effectivePage = currentRole === 'employee'
-    ? (page === 'queue' || page === 'dashboard' ? 'my-tickets' : page)
-    : currentRole === 'agent'
-    ? (page === 'new-ticket' || page === 'my-tickets' || page === 'dashboard' ? 'queue' : page)
-    : 'dashboard';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Navbar />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Sidebar page={effectivePage} onNavigate={handleNavigate} />
-        <main style={{
-          flex: 1, overflowY: 'auto', padding: 24,
-          maxWidth: 1040,
-        }}>
+        <Sidebar page={page} onNavigate={handleNavigate} />
+        <main style={{ flex: 1, overflowY: 'auto', padding: 24, maxWidth: 1040 }}>
           {renderContent()}
         </main>
       </div>
