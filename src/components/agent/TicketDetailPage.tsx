@@ -3,6 +3,7 @@ import { IconArrowLeft, IconRefresh } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
 import { useGroq } from '../../hooks/useGroq';
 import { UrgencyBadge } from '../shared/UrgencyBadge';
+import { StatusPill } from '../shared/StatusPill';
 import { AIBadge } from '../shared/AIBadge';
 import { timeAgo } from '../../utils/time';
 import type { Ticket, TicketStatus } from '../../types';
@@ -15,7 +16,6 @@ export function TicketDetailPage({ ticket: initialTicket, onBack }: Props) {
   const { tickets, updateTicketStatus, saveAgentNote, showToast, currentUser } = useApp();
   const { draftResponse, hasKey } = useGroq();
 
-  // Always read from live store so updates reflect immediately
   const ticket = tickets.find(t => t.id === initialTicket.id) ?? initialTicket;
 
   const [pendingStatus, setPendingStatus] = useState<TicketStatus | null>(null);
@@ -23,6 +23,7 @@ export function TicketDetailPage({ ticket: initialTicket, onBack }: Props) {
   const [draft, setDraft] = useState(ticket.aiDraftResponse ?? '');
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
+  const [backHovered, setBackHovered] = useState(false);
 
   const actor = currentUser || 'Agent';
 
@@ -58,108 +59,165 @@ export function TicketDetailPage({ ticket: initialTicket, onBack }: Props) {
   }
 
   return (
-    <div>
+    <div className="animate-slide-up">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
         <button
           onClick={onBack}
+          onMouseEnter={() => setBackHovered(true)}
+          onMouseLeave={() => setBackHovered(false)}
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4,
-            fontSize: 13, padding: 0,
+            background: backHovered ? 'var(--bg-hover)' : 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 8,
+            cursor: 'pointer',
+            color: backHovered ? 'var(--text-primary)' : 'var(--text-secondary)',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 12, padding: '6px 12px',
+            transition: 'all 120ms ease',
           }}
         >
-          <IconArrowLeft size={16} /> Back to queue
+          <IconArrowLeft size={13} /> Back to queue
         </button>
-        <span style={{ color: 'var(--border-default)' }}>·</span>
-        <span className="font-mono" style={{ fontSize: 13, color: 'var(--text-muted)' }}>{ticket.id}</span>
-        <UrgencyBadge urgency={ticket.urgency} />
-        {ticket.aiRouted && <AIBadge />}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 4 }}>
+          <span className="font-mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ticket.id}</span>
+          <UrgencyBadge urgency={ticket.urgency} />
+          {ticket.aiRouted && <AIBadge />}
+        </div>
       </div>
 
       {/* Two-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, alignItems: 'start' }}>
-        {/* Left */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 500, lineHeight: 1.4, marginBottom: 8 }}>{ticket.title}</h1>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{ticket.raisedBy}</span>
-              <span style={{ color: 'var(--text-muted)' }}>·</span>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Raised {timeAgo(ticket.raisedAt)}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 284px', gap: 28, alignItems: 'start' }}>
+
+        {/* Left column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+          {/* Title & meta */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 12,
+            padding: '22px 24px',
+          }}>
+            <h1 style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.4, marginBottom: 12, letterSpacing: '-0.2px' }}>
+              {ticket.title}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <Avatar name={ticket.raisedBy} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{ticket.raisedBy}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                  Raised {timeAgo(ticket.raisedAt)}
+                </div>
+              </div>
+              <div style={{ marginLeft: 'auto' }}>
+                <StatusPill status={ticket.status} />
+              </div>
             </div>
+            <SectionDivider />
+            <FieldLabel>Description</FieldLabel>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+              {ticket.description}
+            </p>
           </div>
-
-          <Divider />
-
-          <div>
-            <SectionLabel>Description</SectionLabel>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{ticket.description}</p>
-          </div>
-
-          <Divider />
 
           {/* Agent notes */}
-          <div>
-            <SectionLabel>Agent notes</SectionLabel>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>Internal — not shown to the employee.</p>
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 12,
+            padding: '20px 24px',
+          }}>
+            <FieldLabel>Agent notes</FieldLabel>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+              Internal — not visible to the employee.
+            </p>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={4}
               placeholder="Add your notes here…"
               style={{
-                width: '100%', background: 'var(--bg-input)',
-                border: '1px solid var(--border-default)', borderRadius: 8,
-                padding: '10px 12px', color: 'var(--text-primary)', fontSize: 13,
+                width: '100%',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 8,
+                padding: '10px 12px',
+                color: 'var(--text-primary)',
+                fontSize: 13,
                 resize: 'vertical',
+                lineHeight: 1.7,
               }}
             />
             <button
               onClick={saveNote}
               style={{
-                marginTop: 8, background: 'none',
+                marginTop: 10,
+                background: 'none',
                 border: '1px solid var(--border-default)',
-                borderRadius: 8, padding: '7px 14px',
-                color: 'var(--text-primary)', cursor: 'pointer', fontSize: 13,
+                borderRadius: 8,
+                padding: '7px 16px',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 500,
+                transition: 'border-color 120ms, background 120ms',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--border-strong)';
+                e.currentTarget.style.background = 'var(--bg-hover)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border-default)';
+                e.currentTarget.style.background = 'none';
               }}
             >
               Save note
             </button>
           </div>
 
-          <Divider />
-
-          {/* Activity */}
-          <div>
-            <SectionLabel>Activity</SectionLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {ticket.activity.map(a => (
-                <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <span style={{ color: 'var(--text-muted)', marginTop: 1 }}>·</span>
-                  <div>
-                    <span style={{ fontSize: 13 }}>{a.action}</span>
-                    <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block' }}>
-                      {a.actor} · {timeAgo(a.timestamp)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Activity timeline */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 12,
+            padding: '20px 24px',
+          }}>
+            <FieldLabel>Activity</FieldLabel>
+            <ActivityTimeline entries={ticket.activity} />
           </div>
         </div>
 
         {/* Right sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Status */}
-          <Panel>
-            <SectionLabel>Status</SectionLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* Status panel */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 12,
+            padding: '16px 18px',
+          }}>
+            <FieldLabel>Status</FieldLabel>
             {pendingStatus ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <p style={{ fontSize: 13 }}>Mark as <strong>{pendingStatus}</strong>?</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Mark as <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{pendingStatus}</span>?
+                </p>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => confirmStatus(pendingStatus)} style={actionBtn('#FF6B35', '#fff')}>Confirm</button>
-                  <button onClick={() => setPendingStatus(null)} style={actionBtn('transparent', 'var(--text-secondary)', 'var(--border-default)')}>Cancel</button>
+                  <button
+                    onClick={() => confirmStatus(pendingStatus)}
+                    style={solidBtn('var(--accent)', '#fff')}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setPendingStatus(null)}
+                    style={solidBtn('transparent', 'var(--text-secondary)', 'var(--border-default)')}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             ) : (
@@ -167,43 +225,77 @@ export function TicketDetailPage({ ticket: initialTicket, onBack }: Props) {
                 value={ticket.status}
                 onChange={e => setPendingStatus(e.target.value as TicketStatus)}
                 style={{
-                  background: 'var(--bg-input)', border: '1px solid var(--border-default)',
-                  borderRadius: 8, padding: '8px 10px', color: 'var(--text-primary)', fontSize: 13, width: '100%',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 8,
+                  padding: '8px 10px',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  width: '100%',
+                  cursor: 'pointer',
                 }}
               >
                 {statuses.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             )}
-          </Panel>
+          </div>
 
-          <Panel>
-            <SectionLabel>Department</SectionLabel>
-            <span style={{ fontSize: 13 }}>{ticket.category}</span>
-          </Panel>
-
-          <Panel>
-            <SectionLabel>Urgency</SectionLabel>
-            <UrgencyBadge urgency={ticket.urgency} />
-          </Panel>
-
-          <Panel>
-            <SectionLabel>Raised by</SectionLabel>
-            <span style={{ fontSize: 13 }}>{ticket.raisedBy}</span>
-          </Panel>
-
-          <Divider />
+          {/* Meta panel — dept + urgency + raised by combined */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 12,
+            padding: '16px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}>
+            <MetaRow label="Department">
+              <span style={{ fontSize: 13 }}>{ticket.category}</span>
+            </MetaRow>
+            <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+            <MetaRow label="Urgency">
+              <UrgencyBadge urgency={ticket.urgency} />
+            </MetaRow>
+            <div style={{ height: 1, background: 'var(--border-subtle)' }} />
+            <MetaRow label="Raised by">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar name={ticket.raisedBy} size={22} />
+                <span style={{ fontSize: 13 }}>{ticket.raisedBy}</span>
+              </div>
+            </MetaRow>
+          </div>
 
           {/* AI Draft */}
-          <div>
-            <SectionLabel>AI draft response</SectionLabel>
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 12,
+            padding: '16px 18px',
+          }}>
+            <FieldLabel>AI draft response</FieldLabel>
             {!draftOpen ? (
               <button
                 onClick={generateDraft}
                 style={{
-                  width: '100%', background: 'var(--accent-dim)',
-                  border: '1px solid var(--accent-border)', borderRadius: 8,
-                  padding: '9px 14px', color: 'var(--accent)', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 500,
+                  width: '100%',
+                  background: 'var(--accent-dim)',
+                  border: '1px solid var(--accent-border)',
+                  borderRadius: 8,
+                  padding: '9px 14px',
+                  color: 'var(--accent)',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  transition: 'all 140ms ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,107,53,0.16)';
+                  e.currentTarget.style.borderColor = 'rgba(255,107,53,0.45)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'var(--accent-dim)';
+                  e.currentTarget.style.borderColor = 'var(--accent-border)';
                 }}
               >
                 ✦ Draft response
@@ -211,30 +303,44 @@ export function TicketDetailPage({ ticket: initialTicket, onBack }: Props) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {draftLoading ? (
-                  <div className="shimmer" style={{ height: 100, borderRadius: 8 }} />
+                  <div className="shimmer" style={{ height: 108, borderRadius: 8 }} />
                 ) : (
                   <textarea
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
                     rows={6}
                     style={{
-                      width: '100%', background: 'var(--bg-input)',
-                      border: '1px solid var(--border-default)', borderRadius: 8,
-                      padding: '10px 12px', color: 'var(--text-primary)', fontSize: 12,
-                      resize: 'vertical', lineHeight: 1.6,
+                      width: '100%',
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      color: 'var(--text-primary)',
+                      fontSize: 12,
+                      resize: 'vertical',
+                      lineHeight: 1.7,
                     }}
                   />
                 )}
-                <button onClick={useDraft} style={actionBtn('var(--accent)', '#fff')}>Use this response</button>
+                <button
+                  onClick={useDraft}
+                  style={solidBtn('var(--accent)', '#fff')}
+                >
+                  Use this response
+                </button>
                 <button
                   onClick={generateDraft}
                   disabled={draftLoading}
                   style={{
-                    ...actionBtn('transparent', 'var(--text-secondary)', 'var(--border-default)'),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    ...solidBtn('transparent', 'var(--text-secondary)', 'var(--border-default)'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    opacity: draftLoading ? 0.5 : 1,
                   }}
                 >
-                  <IconRefresh size={13} /> Regenerate
+                  <IconRefresh size={12} /> Regenerate
                 </button>
               </div>
             )}
@@ -250,37 +356,117 @@ export function TicketDetailPage({ ticket: initialTicket, onBack }: Props) {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function ActivityTimeline({ entries }: { entries: Ticket['activity'] }) {
+  return (
+    <div style={{ position: 'relative', paddingTop: 4 }}>
+      {/* Vertical connector */}
+      {entries.length > 1 && (
+        <div style={{
+          position: 'absolute',
+          left: 5,
+          top: 12,
+          bottom: 8,
+          width: 1,
+          background: 'var(--border-default)',
+          zIndex: 0,
+        }} />
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {entries.map(a => {
+          const isAI = a.actor === 'AI';
+          const isStatus = a.action.startsWith('Status changed');
+          const dotBg = isAI ? 'var(--accent)' : 'var(--bg-surface)';
+          const dotBorder = isAI
+            ? 'var(--accent)'
+            : isStatus
+            ? 'var(--status-progress)'
+            : 'var(--border-strong)';
+
+          return (
+            <div key={a.id} style={{ display: 'flex', gap: 14, position: 'relative', zIndex: 1 }}>
+              <div style={{
+                width: 11, height: 11,
+                borderRadius: '50%',
+                background: dotBg,
+                border: `2px solid ${dotBorder}`,
+                flexShrink: 0,
+                marginTop: 3,
+              }} />
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                  {a.action}
+                </div>
+                <div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
+                  {a.actor} · {timeAgo(a.timestamp)}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Avatar({ name, size = 26 }: { name: string; size?: number }) {
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <div style={{
-      fontSize: 11, fontWeight: 500, color: 'var(--text-muted)',
-      textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8,
+      width: size, height: size,
+      borderRadius: '50%',
+      background: 'var(--accent-dim)',
+      border: '1px solid var(--accent-border)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.38,
+      fontWeight: 600,
+      color: 'var(--accent)',
+      flexShrink: 0,
+      userSelect: 'none',
+    }}>
+      {initials}
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontSize: 10,
+      fontWeight: 600,
+      color: 'var(--text-muted)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.7px',
+      marginBottom: 10,
     }}>
       {children}
     </div>
   );
 }
 
-function Panel({ children }: { children: React.ReactNode }) {
+function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{
-      background: 'var(--bg-surface)', borderRadius: 8,
-      border: '1px solid var(--border-default)',
-      padding: '12px 14px',
-    }}>
+    <div>
+      <FieldLabel>{label}</FieldLabel>
       {children}
     </div>
   );
 }
 
-function Divider() {
-  return <div style={{ height: 1, background: 'var(--border-subtle)' }} />;
+function SectionDivider() {
+  return <div style={{ height: 1, background: 'var(--border-subtle)', margin: '16px 0' }} />;
 }
 
-function actionBtn(bg: string, color: string, borderColor?: string): React.CSSProperties {
+function solidBtn(bg: string, color: string, borderColor?: string): React.CSSProperties {
   return {
-    background: bg, color, border: `1px solid ${borderColor ?? bg}`,
-    borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
-    fontSize: 13, fontWeight: 500, width: '100%',
+    background: bg,
+    color,
+    border: `1px solid ${borderColor ?? bg}`,
+    borderRadius: 8,
+    padding: '8px 14px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 500,
+    width: '100%',
+    transition: 'opacity 120ms',
   };
 }

@@ -26,7 +26,6 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Derive notifications: status changes on the current user's tickets
   const notifications: Notification[] = tickets
     .filter(t => t.raisedBy === currentUser)
     .flatMap(t =>
@@ -44,12 +43,9 @@ export function NotificationBell() {
 
   const unread = notifications.filter(n => n.timestamp > lastRead).length;
 
-  // Close on outside click
   useEffect(() => {
     function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
@@ -57,7 +53,6 @@ export function NotificationBell() {
 
   function toggle() {
     if (!open) {
-      // Mark all as read when opening
       const now = new Date().toISOString();
       saveNotifRead(now);
       setLastRead(now);
@@ -73,18 +68,32 @@ export function NotificationBell() {
         onClick={toggle}
         aria-label="Notifications"
         style={{
-          background: 'none', border: 'none', cursor: 'pointer',
+          background: open ? 'var(--bg-hover)' : 'none',
+          border: 'none',
+          cursor: 'pointer',
           color: open ? 'var(--text-primary)' : 'var(--text-secondary)',
-          display: 'flex', padding: 4, borderRadius: 4, position: 'relative',
+          display: 'flex',
+          padding: '5px',
+          borderRadius: 6,
+          position: 'relative',
+          transition: 'all 120ms ease',
+        }}
+        onMouseEnter={e => {
+          if (!open) e.currentTarget.style.background = 'var(--bg-hover)';
+        }}
+        onMouseLeave={e => {
+          if (!open) e.currentTarget.style.background = 'none';
         }}
       >
-        <IconBell size={16} />
+        <IconBell size={15} />
         {unread > 0 && (
           <span style={{
-            position: 'absolute', top: 0, right: 0,
-            width: 14, height: 14, borderRadius: '50%',
-            background: 'var(--accent)', color: '#fff',
-            fontSize: 9, fontWeight: 700,
+            position: 'absolute', top: 1, right: 1,
+            width: 13, height: 13, borderRadius: '50%',
+            background: 'var(--accent)',
+            border: '1.5px solid var(--bg-raised)',
+            color: '#fff',
+            fontSize: 8, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             lineHeight: 1,
           }}>
@@ -94,26 +103,33 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="animate-fade-in" style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-          width: 320, background: 'var(--bg-surface)',
+        <div className="animate-scale-in" style={{
+          position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+          width: 330,
+          background: 'var(--bg-raised)',
           border: '1px solid var(--border-default)',
-          borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-          zIndex: 200, overflow: 'hidden',
+          borderRadius: 12,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+          zIndex: 200,
+          overflow: 'hidden',
         }}>
           <div style={{
             padding: '12px 16px',
-            borderBottom: '1px solid var(--border-subtle)',
-            fontSize: 13, fontWeight: 500,
+            borderBottom: '1px solid var(--border-default)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            Notifications
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Notifications</span>
+            {unread === 0 && notifications.length > 0 && (
+              <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>All read</span>
+            )}
           </div>
 
           {notifications.length === 0 ? (
             <div style={{
-              padding: '32px 16px', textAlign: 'center',
+              padding: '36px 16px', textAlign: 'center',
               color: 'var(--text-muted)', fontSize: 13,
             }}>
+              <div style={{ fontSize: 22, marginBottom: 8 }}>🔔</div>
               No updates on your tickets yet.
             </div>
           ) : (
@@ -124,16 +140,23 @@ export function NotificationBell() {
                   <div key={`${n.ticketId}-${n.timestamp}`} style={{
                     padding: '12px 16px',
                     borderTop: i > 0 ? '1px solid var(--border-subtle)' : undefined,
-                    background: isUnread ? '#FF6B350A' : 'transparent',
+                    background: isUnread ? 'rgba(255,107,53,0.05)' : 'transparent',
                     display: 'flex', flexDirection: 'column', gap: 6,
+                    position: 'relative',
                   }}>
+                    {isUnread && (
+                      <div style={{
+                        position: 'absolute', left: 0, top: 0, bottom: 0,
+                        width: 2, background: 'var(--accent)',
+                      }} />
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>
                         {n.ticketId}
                       </span>
                       <StatusPill status={n.newStatus} />
                     </div>
-                    <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.4, fontWeight: isUnread ? 500 : 400 }}>
                       {n.ticketTitle}
                     </span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>

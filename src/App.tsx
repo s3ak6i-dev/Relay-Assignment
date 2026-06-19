@@ -24,7 +24,6 @@ function AppShell() {
   const [page, setPage] = useState<Page>(DEFAULT_PAGE[currentRole]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
-  // When role changes, reset to that role's default page
   useEffect(() => {
     if (currentRole !== prevRole.current) {
       prevRole.current = currentRole;
@@ -58,8 +57,14 @@ function AppShell() {
       <Navbar />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Sidebar page={page} onNavigate={handleNavigate} />
-        <main style={{ flex: 1, overflowY: 'auto', padding: 24, maxWidth: 1040 }}>
-          {renderContent()}
+        <main style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '28px 32px',
+        }}>
+          <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+            {renderContent()}
+          </div>
         </main>
       </div>
       <ToastContainer />

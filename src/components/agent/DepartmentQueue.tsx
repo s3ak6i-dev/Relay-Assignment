@@ -9,6 +9,13 @@ import type { Ticket, TicketStatus, UrgencyLevel } from '../../types';
 const urgencyOrder: Record<UrgencyLevel, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
 const filterOptions: (TicketStatus | 'All')[] = ['All', 'Open', 'In Progress'];
 
+const urgencyColors: Record<UrgencyLevel, string> = {
+  Critical: '#FF6B35',
+  High: '#F59E0B',
+  Medium: '#3B82F6',
+  Low: '#4B5563',
+};
+
 interface Props { onSelectTicket: (ticket: Ticket) => void; }
 
 export function DepartmentQueue({ onSelectTicket }: Props) {
@@ -35,19 +42,28 @@ export function DepartmentQueue({ onSelectTicket }: Props) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 500 }}>{agentDepartment} queue</h1>
-          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.3px' }}>
+            {agentDepartment} queue
+          </h1>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
             {queue.length} open ticket{queue.length !== 1 ? 's' : ''}
+            {filter !== 'All' && <span style={{ color: 'var(--text-muted)' }}> · filtered</span>}
           </p>
         </div>
         <select
           value={sort}
           onChange={e => setSort(e.target.value as typeof sort)}
           style={{
-            background: 'var(--bg-input)', border: '1px solid var(--border-default)',
-            borderRadius: 8, padding: '6px 10px', color: 'var(--text-primary)', fontSize: 12,
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 8,
+            padding: '6px 10px',
+            color: 'var(--text-primary)',
+            fontSize: 12,
+            cursor: 'pointer',
           }}
         >
           <option value="urgency">Sort: Urgency</option>
@@ -57,18 +73,22 @@ export function DepartmentQueue({ onSelectTicket }: Props) {
       </div>
 
       {/* Filter pills */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
         {filterOptions.map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             style={{
-              padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+              padding: '4px 14px',
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: 500,
               border: '1px solid',
-              borderColor: filter === f ? 'var(--accent)' : 'var(--border-default)',
+              borderColor: filter === f ? 'var(--accent-border)' : 'var(--border-default)',
               background: filter === f ? 'var(--accent-dim)' : 'transparent',
               color: filter === f ? 'var(--accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
+              transition: 'all 140ms ease',
             }}
           >
             {f}
@@ -77,11 +97,21 @@ export function DepartmentQueue({ onSelectTicket }: Props) {
       </div>
 
       {queue.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--text-secondary)' }}>
-          No open tickets in your queue.
+        <div style={{
+          textAlign: 'center',
+          padding: '72px 20px',
+          color: 'var(--text-muted)',
+        }}>
+          <div style={{ fontSize: 28, marginBottom: 12 }}>◎</div>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
+            No open tickets in your queue.
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            Check back later or switch department.
+          </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {queue.map(t => (
             <TicketCard key={t.id} ticket={t} onClick={() => onSelectTicket(t)} />
           ))}
@@ -92,57 +122,90 @@ export function DepartmentQueue({ onSelectTicket }: Props) {
 }
 
 function TicketCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }) {
-  const urgencyColors: Record<UrgencyLevel, string> = {
-    Critical: '#FF6B35',
-    High: '#F59E0B',
-    Medium: '#3B82F6',
-    Low: '#6B7280',
-  };
+  const [hovered, setHovered] = useState(false);
   const isCritical = ticket.urgency === 'Critical';
+  const borderColor = urgencyColors[ticket.urgency];
+
+  const descExcerpt = ticket.description.length > 110
+    ? ticket.description.slice(0, 110) + '…'
+    : ticket.description;
+
+  const hoverShadow = isCritical
+    ? `-3px 0 16px rgba(255,107,53,0.18), 0 8px 28px rgba(0,0,0,0.55)`
+    : `0 8px 28px rgba(0,0,0,0.45)`;
 
   return (
     <div
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className={isCritical ? 'animate-urgency-pulse' : ''}
       style={{
         background: 'var(--bg-surface)',
-        borderRadius: 8,
-        borderLeft: `3px solid ${urgencyColors[ticket.urgency]}`,
-        borderTop: '1px solid var(--border-default)',
-        borderRight: '1px solid var(--border-default)',
-        borderBottom: '1px solid var(--border-default)',
-        padding: '14px 16px',
+        borderRadius: 10,
+        borderTop: `1px solid ${hovered ? 'var(--border-strong)' : 'var(--border-default)'}`,
+        borderRight: `1px solid ${hovered ? 'var(--border-strong)' : 'var(--border-default)'}`,
+        borderBottom: `1px solid ${hovered ? 'var(--border-strong)' : 'var(--border-default)'}`,
+        borderLeft: `3px solid ${borderColor}`,
+        padding: '16px 20px',
         cursor: 'pointer',
-        transition: 'border-color 150ms',
-      }}
-      onMouseEnter={e => {
-        const el = e.currentTarget;
-        el.style.borderTopColor = '#3A3A3A';
-        el.style.borderRightColor = '#3A3A3A';
-        el.style.borderBottomColor = '#3A3A3A';
-      }}
-      onMouseLeave={e => {
-        const el = e.currentTarget;
-        el.style.borderTopColor = 'var(--border-default)';
-        el.style.borderRightColor = 'var(--border-default)';
-        el.style.borderBottomColor = 'var(--border-default)';
+        transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease',
+        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        boxShadow: hovered ? hoverShadow : 'var(--shadow-sm)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <UrgencyBadge urgency={ticket.urgency} />
-            <span style={{ fontSize: 14, fontWeight: 500 }}>{ticket.title}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ticket.id}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{ticket.raisedBy}</span>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{timeAgo(ticket.raisedAt)}</span>
-            {ticket.aiRouted && <AIBadge />}
-          </div>
-        </div>
+      {/* Top row: urgency badge + status pill */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <UrgencyBadge urgency={ticket.urgency} />
         <StatusPill status={ticket.status} />
+      </div>
+
+      {/* Title */}
+      <div style={{
+        fontSize: 14,
+        fontWeight: 500,
+        lineHeight: 1.45,
+        color: 'var(--text-primary)',
+        marginBottom: 8,
+      }}>
+        {ticket.title}
+      </div>
+
+      {/* Description excerpt */}
+      <div style={{
+        fontSize: 12,
+        color: 'var(--text-secondary)',
+        lineHeight: 1.6,
+        marginBottom: 14,
+      }}>
+        {descExcerpt}
+      </div>
+
+      {/* Meta row */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        flexWrap: 'wrap',
+      }}>
+        <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+          {ticket.id}
+        </span>
+        <Dot />
+        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{ticket.raisedBy}</span>
+        <Dot />
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{timeAgo(ticket.raisedAt)}</span>
+        {ticket.aiRouted && (
+          <>
+            <Dot />
+            <AIBadge />
+          </>
+        )}
       </div>
     </div>
   );
+}
+
+function Dot() {
+  return <span style={{ color: 'var(--text-muted)', fontSize: 10, lineHeight: 1 }}>·</span>;
 }

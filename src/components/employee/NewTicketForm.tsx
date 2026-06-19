@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { IconLoader2, IconChevronDown } from '@tabler/icons-react';
+import { IconLoader2, IconChevronDown, IconSparkles } from '@tabler/icons-react';
 import { useApp } from '../../context/AppContext';
 import { useGroq } from '../../hooks/useGroq';
 import { AIBadge } from '../shared/AIBadge';
@@ -10,6 +10,10 @@ import type { Page } from '../shared/Sidebar';
 
 const urgencies: UrgencyLevel[] = ['Low', 'Medium', 'High', 'Critical'];
 const departments: Department[] = ['IT', 'HR', 'Finance', 'Admin'];
+
+const urgencyColors: Record<UrgencyLevel, string> = {
+  Low: '#4B5563', Medium: '#3B82F6', High: '#F59E0B', Critical: '#FF6B35',
+};
 
 interface Props { onNavigate: (page: Page) => void; }
 
@@ -97,16 +101,22 @@ export function NewTicketForm({ onNavigate }: Props) {
 
   const canSubmit = name.trim() && title.trim() && description.trim().length >= 1;
   const finalDept = deptOverride ?? aiDept;
-
   const confColor = aiConf >= 0.8 ? 'var(--accent)' : aiConf >= 0.5 ? '#F59E0B' : 'var(--text-muted)';
-
   const similarTickets = tickets.filter(t => similarIds.includes(t.id));
 
   return (
-    <div style={{ maxWidth: 560 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 24 }}>Raise a ticket</h1>
+    <div style={{ maxWidth: 572 }} className="animate-slide-up">
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.3px', marginBottom: 4 }}>
+          Raise a ticket
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+          Describe your issue — AI will handle the routing.
+        </p>
+      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
         {/* Name */}
         <Field label="Your name">
           <input
@@ -118,7 +128,7 @@ export function NewTicketForm({ onNavigate }: Props) {
         </Field>
 
         {/* Title */}
-        <Field label={`Title ${title.length >= 60 ? `(${title.length}/80)` : ''}`}>
+        <Field label={`Title${title.length >= 60 ? ` (${title.length}/80)` : ''}`}>
           <input
             value={title}
             onChange={e => setTitle(e.target.value.slice(0, 80))}
@@ -134,81 +144,132 @@ export function NewTicketForm({ onNavigate }: Props) {
             onChange={e => onDescriptionChange(e.target.value)}
             placeholder="Describe your issue in detail — the more context, the better."
             rows={5}
-            style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }}
+            style={{ ...inputStyle, resize: 'vertical', minHeight: 106, lineHeight: 1.7 }}
           />
+          {description.length > 0 && description.length < 20 && (
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+              Write a bit more to enable AI analysis ({20 - description.length} chars to go).
+            </p>
+          )}
         </Field>
 
         {/* Urgency */}
         <Field label="Urgency">
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {urgencies.map(u => (
-              <label key={u} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                cursor: 'pointer', fontSize: 13,
-                color: urgency === u ? 'var(--text-primary)' : 'var(--text-secondary)',
-              }}>
-                <input
-                  type="radio"
-                  name="urgency"
-                  value={u}
-                  checked={urgency === u}
-                  onChange={() => setUrgency(u)}
-                  style={{ accentColor: 'var(--accent)' }}
-                />
-                {u}
-              </label>
-            ))}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {urgencies.map(u => {
+              const isSelected = urgency === u;
+              return (
+                <label
+                  key={u}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7,
+                    cursor: 'pointer', fontSize: 13,
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: `1px solid ${isSelected ? urgencyColors[u] + '66' : 'var(--border-default)'}`,
+                    background: isSelected ? urgencyColors[u] + '12' : 'transparent',
+                    color: isSelected ? urgencyColors[u] : 'var(--text-secondary)',
+                    transition: 'all 140ms ease',
+                    userSelect: 'none',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="urgency"
+                    value={u}
+                    checked={isSelected}
+                    onChange={() => setUrgency(u)}
+                    style={{ accentColor: urgencyColors[u], width: 12, height: 12 }}
+                  />
+                  {u}
+                </label>
+              );
+            })}
           </div>
         </Field>
 
         {/* Department */}
         <Field label="Department">
-          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-            <div style={{
-              ...inputStyle, display: 'flex', alignItems: 'center', gap: 8,
-              cursor: 'default', paddingRight: 32,
-              color: finalDept ? 'var(--text-primary)' : 'var(--text-secondary)',
-            }}>
-              {aiLoading
-                ? <><IconLoader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Analysing…</>
-                : finalDept ?? 'Let AI decide'
-              }
-            </div>
+          <div style={{
+            ...inputStyle,
+            display: 'flex', alignItems: 'center', gap: 8,
+            color: finalDept ? 'var(--text-primary)' : 'var(--text-secondary)',
+            cursor: 'default',
+          }}>
+            {aiLoading ? (
+              <>
+                <IconLoader2 size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)' }} />
+                <span style={{ fontSize: 13 }}>Analysing…</span>
+              </>
+            ) : (
+              <>
+                {!finalDept && <span style={{ fontSize: 13 }}>Let AI decide</span>}
+                {finalDept && (
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>
+                    {deptOverride ? '✎ ' : '✦ '}{finalDept}
+                  </span>
+                )}
+              </>
+            )}
           </div>
 
-          {/* AI suggestion badge */}
+          {/* AI suggestion card */}
           {aiDept && !aiLoading && (
             <div className="animate-fade-in" style={{
-              marginTop: 8, padding: 12,
-              background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
-              borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 6,
+              marginTop: 10,
+              padding: '14px 16px',
+              background: 'var(--accent-dim)',
+              border: '1px solid var(--accent-border)',
+              borderRadius: 10,
+              display: 'flex', flexDirection: 'column', gap: 8,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <AIBadge label="Suggested" />
-                <span style={{ fontWeight: 500, color: confColor }}>{aiDept}</span>
-                <span style={{ fontSize: 12, color: confColor }}>{Math.round(aiConf * 100)}% confident</span>
+                <span style={{ fontWeight: 600, color: confColor, fontSize: 13 }}>{aiDept}</span>
+                <span style={{ fontSize: 12, color: confColor }}>
+                  {Math.round(aiConf * 100)}% confident
+                </span>
+                <div style={{
+                  marginLeft: 'auto',
+                  height: 5, width: 60, borderRadius: 3,
+                  background: 'var(--border-default)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${Math.round(aiConf * 100)}%`,
+                    background: confColor,
+                    borderRadius: 3,
+                    transition: 'width 300ms ease',
+                  }} />
+                </div>
               </div>
               {aiConf < 0.5 && (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  We're not sure — please select manually.
-                </span>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  Low confidence — consider picking a department manually.
+                </p>
               )}
-              {aiReason && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{aiReason}</span>}
+              {aiReason && (
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  {aiReason}
+                </p>
+              )}
               <button
                 onClick={() => setShowOverride(o => !o)}
                 style={{
                   alignSelf: 'flex-start', background: 'none', border: 'none',
                   color: 'var(--accent)', cursor: 'pointer', fontSize: 12, padding: 0,
-                  display: 'flex', alignItems: 'center', gap: 4,
+                  display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500,
                 }}
               >
-                Override <IconChevronDown size={12} />
+                Override department
+                <IconChevronDown size={12} style={{ transform: showOverride ? 'rotate(180deg)' : 'none', transition: '200ms' }} />
               </button>
               {showOverride && (
                 <select
                   value={deptOverride ?? ''}
                   onChange={e => setDeptOverride(e.target.value as Department || null)}
-                  style={{ ...inputStyle, marginTop: 4, width: 'auto' }}
+                  style={{ ...inputStyle, marginTop: 2, width: 'auto' }}
                 >
                   <option value="">Use AI suggestion ({aiDept})</option>
                   {departments.map(d => <option key={d} value={d}>{d}</option>)}
@@ -228,39 +289,46 @@ export function NewTicketForm({ onNavigate }: Props) {
         {similarTickets.length > 0 && (
           <div style={{
             border: '1px solid var(--border-default)',
-            borderRadius: 8, overflow: 'hidden',
-          }}>
+            borderRadius: 10, overflow: 'hidden',
+          }} className="animate-fade-in">
             <button
               onClick={() => setSimilarOpen(o => !o)}
               style={{
-                width: '100%', padding: '10px 14px',
+                width: '100%', padding: '11px 16px',
                 background: 'var(--bg-surface)', border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 color: 'var(--text-primary)', fontSize: 13,
               }}
             >
-              <span>
-                <span style={{ color: 'var(--accent)' }}>✦</span>{' '}
-                {similarTickets.length} similar ticket{similarTickets.length > 1 ? 's' : ''} found
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <IconSparkles size={13} color="var(--accent)" />
+                <span style={{ fontWeight: 500 }}>
+                  {similarTickets.length} similar ticket{similarTickets.length > 1 ? 's' : ''} found
+                </span>
               </span>
-              <IconChevronDown size={14} style={{ transform: similarOpen ? 'rotate(180deg)' : 'none', transition: '200ms' }} />
+              <IconChevronDown
+                size={14}
+                style={{ transform: similarOpen ? 'rotate(180deg)' : 'none', transition: '200ms', color: 'var(--text-muted)' }}
+              />
             </button>
             {similarOpen && (
               <div className="animate-fade-in">
-                <p style={{ padding: '8px 14px', fontSize: 12, color: 'var(--text-secondary)', borderTop: '1px solid var(--border-subtle)' }}>
+                <p style={{ padding: '8px 16px', fontSize: 12, color: 'var(--text-secondary)', borderTop: '1px solid var(--border-subtle)' }}>
                   Check if your issue is already addressed before submitting.
                 </p>
                 {similarTickets.map(t => (
                   <div key={t.id} style={{
-                    padding: '10px 14px', borderTop: '1px solid var(--border-subtle)',
-                    display: 'flex', flexDirection: 'column', gap: 4,
+                    padding: '12px 16px', borderTop: '1px solid var(--border-subtle)',
+                    display: 'flex', flexDirection: 'column', gap: 5,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.id}</span>
+                      <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{t.id}</span>
                       <StatusPill status={t.status} />
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>{t.category} · {timeAgo(t.updatedAt)}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                        {t.category} · {timeAgo(t.updatedAt)}
+                      </span>
                     </div>
-                    <span style={{ fontSize: 13 }}>{t.title}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>{t.title}</span>
                   </div>
                 ))}
               </div>
@@ -269,20 +337,37 @@ export function NewTicketForm({ onNavigate }: Props) {
         )}
 
         {/* Submit */}
-        <button
-          onClick={submit}
-          disabled={!canSubmit}
-          style={{
-            alignSelf: 'flex-end',
-            background: canSubmit ? 'var(--accent)' : 'var(--border-default)',
-            color: canSubmit ? '#fff' : 'var(--text-muted)',
-            border: 'none', borderRadius: 8, padding: '10px 22px',
-            fontSize: 14, fontWeight: 500, cursor: canSubmit ? 'pointer' : 'not-allowed',
-            transition: 'all 100ms',
-          }}
-        >
-          Raise ticket →
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4 }}>
+          <button
+            onClick={submit}
+            disabled={!canSubmit}
+            style={{
+              background: canSubmit ? 'var(--gradient-accent)' : 'var(--bg-hover)',
+              color: canSubmit ? '#fff' : 'var(--text-muted)',
+              border: 'none',
+              borderRadius: 9,
+              padding: '11px 24px',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
+              boxShadow: canSubmit ? '0 2px 10px rgba(255,107,53,0.30)' : 'none',
+              transition: 'all 140ms ease',
+              letterSpacing: '-0.1px',
+            }}
+            onMouseEnter={e => {
+              if (canSubmit) {
+                e.currentTarget.style.boxShadow = '0 4px 18px rgba(255,107,53,0.42)';
+                e.currentTarget.style.opacity = '0.92';
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.boxShadow = canSubmit ? '0 2px 10px rgba(255,107,53,0.30)' : 'none';
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            Raise ticket →
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -290,7 +375,7 @@ export function NewTicketForm({ onNavigate }: Props) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
       <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>{label}</label>
       {children}
     </div>
@@ -298,8 +383,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputStyle: React.CSSProperties = {
-  background: 'var(--bg-input)', border: '1px solid var(--border-default)',
-  borderRadius: 8, padding: '9px 12px',
-  color: 'var(--text-primary)', fontSize: 13,
+  background: 'var(--bg-input)',
+  border: '1px solid var(--border-default)',
+  borderRadius: 8,
+  padding: '10px 12px',
+  color: 'var(--text-primary)',
+  fontSize: 13,
   width: '100%',
+  transition: 'border-color 120ms',
 };
