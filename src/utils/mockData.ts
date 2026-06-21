@@ -268,6 +268,26 @@ export const mockTickets: Ticket[] = [
     ],
   },
   {
+    id: 'TKT-0058',
+    title: 'Production server down — all services unreachable',
+    description:
+      'The main production server has been completely unreachable since this morning. All internal services including email, CRM, and the HR portal are down. The entire organisation is affected and no work can proceed. This needs immediate escalation.',
+    category: 'IT',
+    urgency: 'Critical',
+    status: 'Open',
+    raisedBy: 'Rahul Varma',
+    raisedAt: ts(56 * hr),
+    updatedAt: ts(56 * hr),
+    aiRouted: true,
+    aiCategorySuggestion: 'IT',
+    aiConfidence: 0.97,
+    aiCategoryReason: 'Server and infrastructure outages are IT critical incidents',
+    activity: [
+      { id: 'p1', action: 'Ticket raised', actor: 'Rahul Varma', timestamp: ts(56 * hr) },
+      { id: 'p2', action: 'AI routed to IT', actor: 'AI', timestamp: ts(56 * hr - 1000) },
+    ],
+  },
+  {
     id: 'TKT-0048',
     title: 'Budget approval for team event',
     description:
